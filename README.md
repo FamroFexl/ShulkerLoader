@@ -1,2 +1,4 @@
 # ShulkerLoader
-Redirects item pickups into an offhand shulker box!
+Minecraft Mod for redirecting item pickups into an offhand shulker box
+# How To Build
+`gradlew build`
