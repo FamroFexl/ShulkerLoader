@@ -47,7 +47,6 @@ public class ShulkerLoad{
 		ItemStack pickup_item_copy = pickup_item.copy();
 		int stack_avaliable = getSlotWithRemainingSpace(pickup_item_copy, shulker_inv);
 		while(stack_avaliable != -1) {
-			System.out.println(stack_avaliable);
 			ItemStack shulker_item = shulker_inv.get(stack_avaliable).copy();
 			int combined_stack = shulker_item.getCount() + pickup_item_copy.getCount();
 			//If pickup item fits in selected stack
