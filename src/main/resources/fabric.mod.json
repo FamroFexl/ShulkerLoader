@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "shulkerloader",
+  "version": "${version}",
+
+  "name": "Shulker Loader",
+  "description": "Redirects item pickups into an offhand shulker box!",
+  "authors": [
+    "Famro Fexl"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/shulker-loader/",
+	"issues": "https://github.com/FamroFexl/ShulkerLoader/issues",
+    "sources": "https://github.com/FamroFexl/ShulkerLoader"
+  },
+
+  "license": "MIT License",
+  "icon": "assets/shulkerloader/logo.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.fexl.shulkerloader.ShulkerLoader"
+    ]
+  },
+  "mixins": [
+    "shulkerloader.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.10",
+    "minecraft": ">=1.17",
+    "java": ">=16"
+  }
+}
