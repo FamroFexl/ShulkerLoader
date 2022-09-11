@@ -123,9 +123,11 @@ public class ShulkerLoad{
 		shulker_tag.setTag("BlockEntityTag", items_tag);
 		
 		//If the shulker box has a custom name, re-add it
-		NBTTagCompound customName = offhand_item.getTagCompound().getCompoundTag("display");
-		if(!customName.hasNoTags()) {
-			shulker_tag.setTag("display", customName);
+		if(offhand_item.hasTagCompound()) {
+			if(offhand_item.getTagCompound().hasKey("display")) {
+				NBTTagCompound customName = offhand_item.getTagCompound().getCompoundTag("display");
+				shulker_tag.setTag("display", customName);
+			}
 		}
 		
 		//Set the shulker box tag equal to the new one
