@@ -144,17 +144,17 @@ public class ShulkerLoad{
 		//Cancel the event so it isn't processed by the inventory
 		event.setCanceled(true);
 			
-		//Shows the player pickup animation
-		player.take(event.getItem(), pickup_item.getCount());
-			
 		//Adds the remaining ItemEntity that couldn't fit in the shulker box into the player's inventory
 		if(!item_transferred) {
 			pickup_item.setCount(pickup_item_copy.getCount());
-			playerInv.add(pickup_item);
+			if(playerInv.add(pickup_item)) {
+				//Shows the player pickup animation
+				player.take(event.getItem(), pickup_item.getCount());
+				
+				//Kill the ItemEntity
+				event.getItem().kill();
+			}
 		}
-			
-		//Kill the ItemEntity
-		event.getItem().kill();
 	}
 	
 	//Ported from Inventory.class
