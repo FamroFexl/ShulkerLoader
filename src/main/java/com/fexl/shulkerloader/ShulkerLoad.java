@@ -8,8 +8,10 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,143 +20,130 @@ public class ShulkerLoad{
 	
 	@SubscribeEvent
 	public void itemPickupEvent(EntityItemPickupEvent event) {
+		//Common variables
 		Player player = event.getPlayer();
 		Inventory playerInv = player.getInventory();
 		ItemStack offhand_item = playerInv.offhand.get(0);
 		ItemStack pickup_item = event.getItem().getItem();
 		
 		//Check the player is carrying a shulker box AND the item picked up is NOT a shulker box
-		if(!isShulkerBox(offhand_item) || isShulkerBox(pickup_item)) {
+		if(!this.isShulkerBox(offhand_item) || this.isShulkerBox(pickup_item)) {
 			return;
 		}
 		
 		//Stores the shulker box contents for processing
 		NonNullList<ItemStack> shulker_inv = NonNullList.withSize(27, ItemStack.EMPTY);
 
+	//--------------------------------SHULKER UNLOADING----------------------------\\
 		//Iterate through all the items in the shulker box and place them in an ItemStack list so they are easier to work with
 		if(offhand_item.hasTag()) {
-			//Get the items in the shulker box
-			ListTag items = offhand_item.getTag().getCompound("BlockEntityTag").getList("Items", 10);
-			
-			for(int i=0; i<items.size(); i++) {
-				CompoundTag selected_item = items.getCompound(i);
-				ItemStack base_istack = ItemStack.of(selected_item);
-				shulker_inv.set(selected_item.getByte("Slot"), base_istack);
-			}
-		}
-		
-		Boolean item_transferred = false;
-		ItemStack pickup_item_copy = pickup_item.copy();
-		int stack_avaliable = getSlotWithRemainingSpace(pickup_item_copy, shulker_inv);
-		while(stack_avaliable != -1) {
-			ItemStack shulker_item = shulker_inv.get(stack_avaliable).copy();
-			int combined_stack = shulker_item.getCount() + pickup_item_copy.getCount();
-			//If pickup item fits in selected stack
-			if(combined_stack <= shulker_item.getMaxStackSize()) {
-				shulker_item.setCount(combined_stack);
-				pickup_item_copy.setCount(0);
-				shulker_inv.set(stack_avaliable, shulker_item);
-				item_transferred = true;
-				break;
-			}
-			int stack_left = shulker_item.getMaxStackSize() - shulker_item.getCount();
-			//If pickup item doesn't fit in selected stack
-			if(pickup_item_copy.getCount() > stack_left) {
-				pickup_item_copy.setCount(pickup_item_copy.getCount()-stack_left);
-				shulker_item.setCount(shulker_item.getMaxStackSize());
-				shulker_inv.set(stack_avaliable, shulker_item);
-				stack_avaliable = getSlotWithRemainingSpace(pickup_item_copy, shulker_inv);
-				continue;
-			}		
-		}
-
-		//Check if the shulker has any free slots
-		int slot_avaliable = getFreeSlot(shulker_inv);
-		if(slot_avaliable != -1 && !item_transferred) {
-			shulker_inv.set(slot_avaliable, pickup_item_copy);
-			item_transferred = true;
-		}
-		
-		//***
-		ListTag item_list = new ListTag();
-		//Reinsert all items into the shulker box
-		for(int i=0; i<shulker_inv.size(); i++) {
-			//Get the working item
-			ItemStack current_item = shulker_inv.get(i);
-			//Skip over empty slots so they aren't inserted into the shulker box nbt data
-			if(!(current_item==ItemStack.EMPTY)) {
-				{
-					ByteTag item_count = ByteTag.valueOf((byte)current_item.getCount());
+			//Add the existing tag to the resulting tag
+			if(offhand_item.getTag().contains("BlockEntityTag")) {
+				if(offhand_item.getTag().getCompound("BlockEntityTag").contains("Items")) {
+					//Get the items in the shulker box
+					ListTag items = offhand_item.getTag().getCompound("BlockEntityTag").getList("Items", 10);
+					
+					//Iterate through the items and place them in shulker_inv
+					for(int i=0; i<items.size(); i++) {
+						//Get the next item
+						CompoundTag selected_item = items.getCompound(i);
 						
-					//Select slot based on position in shulker_inv
-					ByteTag item_slot = ByteTag.valueOf((byte) i);
+						//Turn the item nbt into an ItemStack
+						ItemStack base_istack = ItemStack.of(selected_item);
 						
-					//Item id queuing returns the count and id, so it has to be split so just the id can be retrieved
-					String[] current_item_id = current_item.toString().split(" ");
-					StringTag item_id = StringTag.valueOf("minecraft:" + current_item_id[1]);
-						
-					//Add the item attributes to a CompoundTag container
-					CompoundTag item_attributes = new CompoundTag();
-					item_attributes.put("Count", item_count);
-					item_attributes.put("Slot", item_slot);
-					item_attributes.put("id", item_id);
-						
-					//Add the pickup item tag to the resulting shulker box item if it has one
-					if(current_item.hasTag()) {
-						item_attributes.put("tag", current_item.getTag());
+						//Insert it into a ItemStack list for future processing
+						shulker_inv.set(selected_item.getByte("Slot"), base_istack);
 					}
-					
-					//Storage tag for the item
-					item_list.add(item_attributes);
 				}
-					
-			}
-		}
-		//Get the shulker color for the id tag
-		String[] offhand_id = offhand_item.toString().split(" ");
-		StringTag shulker_id = StringTag.valueOf("minecraft:" + offhand_id[1]);
-			
-		//Interior tags
-		CompoundTag items_tag = new CompoundTag();
-		items_tag.put("Items", item_list);
-		items_tag.put("id", shulker_id);
-		
-			
-		//The base block tag
-		CompoundTag shulker_tag = new CompoundTag();
-		shulker_tag.put("BlockEntityTag", items_tag);
-		
-		//If the shulker box has a custom name, re-add it
-		if(offhand_item.hasTag()) {
-			if(offhand_item.getTag().contains("display")) {
-				CompoundTag customName = offhand_item.getTag().getCompound("display");
-				shulker_tag.put("display", customName);
 			}
 		}
 		
-		//Set the shulker box tag equal to the new one
-		offhand_item.setTag(shulker_tag);
+	//--------------------------------SHULKER TESTING & DERIVATIVE FACTORS-------------------------\\
+		//Count after processing
+		int processed_count = checkSlots(pickup_item, shulker_inv);
+		
+		//Count before processing
+		int previous_count = pickup_item.copy().getCount();
+		
+		//If at least one quantity of the pickup item wasn't deposited into the offhand shulker box
+		if(!(previous_count > processed_count)) {
+			return;
+		}
 		
 		//Grant advancements associated with picking up the item
 		CriteriaTriggers.INVENTORY_CHANGED.trigger((ServerPlayer)player, playerInv, pickup_item);
-		
-		//Update player statistics with the item
-		player.awardStat(Stats.ITEM_PICKED_UP.get(pickup_item.getItem()), pickup_item.getCount());
-		
+					
+		//Add the pickup item count to the pickup item statistics
+		player.awardStat(Stats.ITEM_PICKED_UP.get(pickup_item.getItem()), previous_count-processed_count);
+
+		//Set the count of the pickup item
+		pickup_item.setCount(processed_count);
+				
 		//Cancel the event so it isn't processed by the inventory
 		event.setCanceled(true);
+		
+		//Shows the player pickup animation
+		player.take(event.getItem(), previous_count-processed_count);
+					
+		if(pickup_item.getCount() == 0) {
+			//Kill the ItemEntity
+			event.getItem().kill();
+		}
+		
+	//--------------------------------SHULKER RELOADING--------------------------\\
+		//Stores items as nbt until they are processed into the shulker box
+		ListTag item_list = new ListTag();
+		
+		//Reinsert all items into the shulker box
+		for(int i = 0; i < shulker_inv.size(); i++) {
+			//Get the working item
+			ItemStack current_item = shulker_inv.get(i);
 			
-		//Adds the remaining ItemEntity that couldn't fit in the shulker box into the player's inventory
-		if(!item_transferred) {
-			pickup_item.setCount(pickup_item_copy.getCount());
-			if(playerInv.add(pickup_item)) {
-				//Shows the player pickup animation
-				player.take(event.getItem(), pickup_item.getCount());
+			//Skip over empty slots so they aren't inserted into the shulker box nbt data
+			if(!(current_item==ItemStack.EMPTY)) {
+				//Get item count
+				ByteTag item_count = ByteTag.valueOf((byte) current_item.getCount());
 				
-				//Kill the ItemEntity
-				event.getItem().kill();
+				//Select slot based on position in shulker_inv
+				ByteTag item_slot = ByteTag.valueOf((byte) i);
+
+				//Get the id based on the item's registry name
+				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
+				
+				//Add the item attributes to an item attributes container
+				CompoundTag item_attributes = new CompoundTag();
+				item_attributes.put("Count", item_count);
+				item_attributes.put("Slot", item_slot);
+				item_attributes.put("id", item_id);
+				
+				//Add the pickup item tag to the resulting shulker box item if it has one
+				if(current_item.hasTag()) {
+					item_attributes.put("tag", current_item.getTag());
+				}
+				
+				//Add the resulting item to the list of items
+				item_list.add(item_attributes);
 			}
 		}
+		//Holds future shulker box tag while it's being constructed
+		CompoundTag shulker_tag = new CompoundTag();
+		
+		if(offhand_item.hasTag()) {
+			//Add the existing tag to the resulting tag
+			shulker_tag = offhand_item.getTag();
+		}
+		
+		//Add the base block tag and id if they don't already exist
+		if(!shulker_tag.contains("BlockEntityTag")) {
+			shulker_tag.put("BlockEntityTag", new CompoundTag());
+			shulker_tag.getCompound("BlockEntityTag").putString("id", "minecraft:shulker_box");
+		}
+		
+		//Add to or override "Items" in "BlockEntityTag"
+		shulker_tag.getCompound("BlockEntityTag").put("Items", item_list);
+		
+		//Set the shulker box tag equal to the new one
+		offhand_item.setTag(shulker_tag);
 	}
 	
 	//Ported from Inventory.class
@@ -164,7 +153,6 @@ public class ShulkerLoad{
 				return i;
 		    }
 		}
-
 		return -1;
 	}
 	
@@ -182,11 +170,66 @@ public class ShulkerLoad{
 		}
 	    return -1;
 	}
+	
+	//Distribute an ItemStack into the components of an ItemStack list and return the remainder
+	private int checkSlots(ItemStack item, NonNullList<ItemStack> items) {
+		//True if the stack has been fully transferred into items
+		Boolean item_transferred = false;
+		
+		//Copy item for processing
+		ItemStack pickup_item_copy = item.copy();
+		
+		//Get the next avaliable slot that has remaining space for item
+		int stack_avaliable = this.getSlotWithRemainingSpace(pickup_item_copy, items);
+		
+		//Iterate until no more stacks with remaining space are available
+		while(stack_avaliable != -1) {
+			ItemStack shulker_item = items.get(stack_avaliable).copy();
+			int combined_stack = shulker_item.getCount() + pickup_item_copy.getCount();
+			
+			//If pickup item fits in selected stack
+			if(combined_stack <= shulker_item.getMaxStackSize()) {
+				shulker_item.setCount(combined_stack);
+				pickup_item_copy.setCount(0);
+				items.set(stack_avaliable, shulker_item);
+				item_transferred = true;
+				break;
+			}
+			//How much stack capacity is left
+			int stack_left = shulker_item.getMaxStackSize() - shulker_item.getCount();
+			
+			//If pickup item doesn't fit in selected stack
+			if(pickup_item_copy.getCount() > stack_left) {
+				pickup_item_copy.setCount(pickup_item_copy.getCount()-stack_left);
+				shulker_item.setCount(shulker_item.getMaxStackSize());
+				items.set(stack_avaliable, shulker_item);
+				stack_avaliable = this.getSlotWithRemainingSpace(pickup_item_copy, items);
+				continue;
+			}	
+		}
 
-	//Avoiding the use of registries for portability
+		//Check if the shulker has any free slots
+		int slot_avaliable = getFreeSlot(items);
+		if(slot_avaliable != -1 && !item_transferred) {
+			items.set(slot_avaliable, pickup_item_copy.copy());
+			pickup_item_copy.setCount(0);
+		}
+		
+		//Return the remainder of item
+		return pickup_item_copy.getCount();
+	}
+	
+	//Overloaded with ItemStack
 	private Boolean isShulkerBox(ItemStack item) {
-		String[] item_name = item.toString().split(" ");
-		switch(item_name[1]) {
+		return this.isShulkerBox(item.getItem());
+	}
+	
+	//Avoiding the use of registries for portability
+	private Boolean isShulkerBox(Item item) {
+		//Get item registry name without namespace
+		String item_name = item.builtInRegistryHolder().key().location().getPath().toString();
+		//Check to see if the item is a shulker
+		switch(item_name) {
 		case ("shulker_box"):
 			break;
 		case ("white_shulker_box"):
