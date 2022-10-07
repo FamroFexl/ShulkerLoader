@@ -34,6 +34,13 @@ public class ShulkerLoad {
 		if(!isShulkerBox(offhand_item) || isShulkerBox(pickup_item)) {
 			return;
 		}
+		
+		//Check the offhand shulker box doesn't have a stack size greater than 1
+		if(offhand_item.getCount() > 1) {
+			return;
+		}
+		
+		System.out.println(offhand_item.getMaxStackSize());
 				
 		//Stores the shulker box contents for processing
 		NonNullList<ItemStack> shulker_inv = NonNullList.withSize(27, ItemStack.EMPTY);
