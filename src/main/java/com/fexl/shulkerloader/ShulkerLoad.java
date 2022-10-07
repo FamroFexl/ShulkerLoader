@@ -31,6 +31,11 @@ public class ShulkerLoad{
 			return;
 		}
 		
+		//Check the offhand shulker box doesn't have a stack size greater than 1
+		if(offhand_item.getCount() > 1) {
+			return;
+		}
+		
 		//Stores the shulker box contents for processing
 		NonNullList<ItemStack> shulker_inv = NonNullList.withSize(27, ItemStack.EMPTY);
 
