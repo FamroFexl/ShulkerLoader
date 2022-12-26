@@ -8,7 +8,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -47,6 +46,8 @@ public class ShulkerLoad{
 				if(offhand_item.getTag().getCompound("BlockEntityTag").contains("Items")) {
 					//Get the items in the shulker box
 					ListTag items = offhand_item.getTag().getCompound("BlockEntityTag").getList("Items", 10);
+					
+					System.out.println(offhand_item.getTag());
 					
 					//Iterate through the items and place them in shulker_inv
 					for(int i=0; i<items.size(); i++) {
@@ -112,8 +113,8 @@ public class ShulkerLoad{
 				//Select slot based on position in shulker_inv
 				ByteTag item_slot = ByteTag.valueOf((byte) i);
 
-				//Get the id based on the item's registry name
-				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
+				//Get the id based on the item's registry name and item path
+				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getNamespace().toString() + ":" + current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
 				
 				//Add the item attributes to an item attributes container
 				CompoundTag item_attributes = new CompoundTag();
@@ -146,6 +147,8 @@ public class ShulkerLoad{
 		
 		//Add to or override "Items" in "BlockEntityTag"
 		shulker_tag.getCompound("BlockEntityTag").put("Items", item_list);
+		
+		System.out.println(shulker_tag);
 		
 		//Set the shulker box tag equal to the new one
 		offhand_item.setTag(shulker_tag);
