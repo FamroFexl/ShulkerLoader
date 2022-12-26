@@ -39,8 +39,6 @@ public class ShulkerLoad {
 		if(offhand_item.getCount() > 1) {
 			return;
 		}
-		
-		System.out.println(offhand_item.getMaxStackSize());
 				
 		//Stores the shulker box contents for processing
 		NonNullList<ItemStack> shulker_inv = NonNullList.withSize(27, ItemStack.EMPTY);
@@ -118,9 +116,8 @@ public class ShulkerLoad {
 				//Select slot based on position in shulker_inv
 				ByteTag item_slot = ByteTag.valueOf((byte) i);
 
-				//Get the id based on the item's registry name
-				//StringTag item_id = StringTag.valueOf(current_item.getItem().getRegistryName().toString());
-				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
+				//Get the id based on the item's registry name and item path
+				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getNamespace().toString()+ ":" + current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
 
 				//Add the item attributes to an item attributes container
 				CompoundTag item_attributes = new CompoundTag();
