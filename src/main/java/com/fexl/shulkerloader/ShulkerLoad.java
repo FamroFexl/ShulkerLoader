@@ -47,8 +47,6 @@ public class ShulkerLoad{
 					//Get the items in the shulker box
 					ListTag items = offhand_item.getTag().getCompound("BlockEntityTag").getList("Items", 10);
 					
-					System.out.println(offhand_item.getTag());
-					
 					//Iterate through the items and place them in shulker_inv
 					for(int i=0; i<items.size(); i++) {
 						//Get the next item
@@ -147,8 +145,6 @@ public class ShulkerLoad{
 		
 		//Add to or override "Items" in "BlockEntityTag"
 		shulker_tag.getCompound("BlockEntityTag").put("Items", item_list);
-		
-		System.out.println(shulker_tag);
 		
 		//Set the shulker box tag equal to the new one
 		offhand_item.setTag(shulker_tag);
