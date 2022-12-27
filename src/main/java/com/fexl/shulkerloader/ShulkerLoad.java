@@ -128,7 +128,7 @@ public class ShulkerLoad{
 				NBTTagShort item_type = new NBTTagShort((short) current_item.getItemDamage());
 
 				//Get the id based on the item's registry name
-				NBTTagString item_id = new NBTTagString(current_item.getItem().getRegistryName().getResourcePath().toString());
+				NBTTagString item_id = new NBTTagString(current_item.getItem().getRegistryName().getResourceDomain().toString() + ":" + current_item.getItem().getRegistryName().getResourcePath().toString());
 						
 				//Add the item attributes to an item attributes container
 				NBTTagCompound item_attributes = new NBTTagCompound();
