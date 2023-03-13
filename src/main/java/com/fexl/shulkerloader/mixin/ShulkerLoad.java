@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -117,8 +118,8 @@ public class ShulkerLoad {
 				ByteTag item_slot = ByteTag.valueOf((byte) i);
 
 				//Get the id based on the item's registry name and item path
-				StringTag item_id = StringTag.valueOf(current_item.getItem().builtInRegistryHolder().key().location().getNamespace().toString()+ ":" + current_item.getItem().builtInRegistryHolder().key().location().getPath().toString());
-
+				StringTag item_id = StringTag.valueOf(Registry.ITEM.getKey(current_item.getItem()).getNamespace().toString() + ":" + Registry.ITEM.getKey(current_item.getItem()).getPath().toString());
+				
 				//Add the item attributes to an item attributes container
 				CompoundTag item_attributes = new CompoundTag();
 				item_attributes.put("Count", item_count);
@@ -236,7 +237,8 @@ public class ShulkerLoad {
 	//Avoiding the use of registries for portability
 	private Boolean isShulkerBox(Item item) {
 		//Get item registry name without namespace
-		String item_name = item.builtInRegistryHolder().key().location().getPath().toString();
+		String item_name = Registry.ITEM.getKey(item).getPath().toString();
+		
 		//Check to see if the item is a shulker
 		switch(item_name) {
 		case ("shulker_box"):

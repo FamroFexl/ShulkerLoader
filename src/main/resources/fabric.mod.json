@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "shulkerloader",
-  "version": "1.0.6",
+  "version": "1.0.8",
 
   "name": "Shulker Loader",
   "description": "Redirects item pickups into an offhand shulker box!",
@@ -14,7 +14,7 @@
     "sources": "https://github.com/FamroFexl/ShulkerLoader"
   },
 
-  "license": "MIT License",
+  "license": "MIT",
   "icon": "assets/shulkerloader/logo.png",
 
   "environment": "*",
@@ -29,6 +29,7 @@
 
   "depends": {
     "fabricloader": ">=0.10",
+    "minecraft": "<=1.19.2",
     "minecraft": ">=1.17",
     "java": ">=16"
   }
