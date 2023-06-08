@@ -6,7 +6,7 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
 
-archivesBaseName = "shulkerloader-fabric-1.19.x+"
+archivesBaseName = "shulkerloader-fabric-1.19.3-1.20"
 version = project.mod_version
 group = project.maven_group
 
