@@ -20,10 +20,17 @@ body:
   attributes:
     label: Mod loader(s) used
     description: What Minecraft modloader(s) did you use?
-    description: What version of Minecraft did this bug occur in?
-    placeholder: "i.e. v1.8.9, v1.12.2, v1.18.1, etc.)"
+    multiple: true
+    options:
+      - Fabric
+      - Forge
   validations:
     required: true
+- type: input
+  attributes:
+    label: Minecraft version used
+    description: What version of Minecraft did this bug occur in?
+    placeholder: "i.e. v1.8.9, v1.12.2, v1.18.1, etc.)"
 - type: input
   attributes:
     label: Other mods used
@@ -34,10 +41,6 @@ body:
     label: To Reproduce (If applicable)
     description: What actions and conditions were required to make the bug occur?
 - type: textarea
-  attributes:
-    label: Additional Information
-    description: Other context you think might be useful.
-- type: textinput
   attributes:
     label: Additional Information
     description: Other context you think might be useful.
