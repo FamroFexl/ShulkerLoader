@@ -28,7 +28,7 @@ body:
   attributes:
     label: Other mods used
     description: What other mods were running at the same time?
-    placeholder: "i.e. Optifine, Sodium, JourneyMap, etc.)
+    placeholder: "i.e. Optifine, Sodium, JourneyMap, etc.)"
 - type: textarea
   attributes:
     label: To Reproduce (If applicable)
