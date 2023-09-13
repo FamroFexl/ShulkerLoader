@@ -1,11 +1,11 @@
 name: Bug Report
 description: Report Problems with Shulker Loader
-title: " [Bug]: "
+title: "[Bug]: "
 labels: "bug"
 body:
 - type: input
     attributes:
-        label: Describe the Bug
+    	label: Describe the Bug
         description: A clear and concise description of what the bug is.
     validations:
         required: true
