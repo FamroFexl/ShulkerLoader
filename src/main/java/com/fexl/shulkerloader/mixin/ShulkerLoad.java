@@ -11,7 +11,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.ByteTag;
@@ -22,8 +27,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 
 @Mixin(ItemEntity.class)
-public class ShulkerLoad {
-	
+public class ShulkerLoad {	
 	@Inject(method = "Lnet/minecraft/world/entity/item/ItemEntity;playerTouch(Lnet/minecraft/world/entity/player/Player;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Inventory;add(Lnet/minecraft/world/item/ItemStack;)Z", ordinal = 0), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
 	private void itemPickupEvent(Player player, CallbackInfo event) {
 		ItemEntity itemEntity = (ItemEntity)(Object) this;
@@ -40,37 +44,12 @@ public class ShulkerLoad {
 		if(offhand_item.getCount() > 1) {
 			return;
 		}
-				
-		//Stores the shulker box contents for processing
-		NonNullList<ItemStack> shulker_inv = NonNullList.withSize(27, ItemStack.EMPTY);
-
-	//--------------------------------SHULKER UNLOADING----------------------------\\
-		//Iterate through all the items in the shulker box and place them in an ItemStack list so they are easier to work with
-		if(offhand_item.hasTag()) {
-			//Add the existing tag to the resulting tag
-			if(offhand_item.getTag().contains("BlockEntityTag")) {
-				if(offhand_item.getTag().getCompound("BlockEntityTag").contains("Items")) {
-					//Get the items in the shulker box
-					ListTag items = offhand_item.getTag().getCompound("BlockEntityTag").getList("Items", 10);
-						
-					//Iterate through the items and place them in shulker_inv
-					for(int i=0; i<items.size(); i++) {
-						//Get the next item
-						CompoundTag selected_item = items.getCompound(i);
-								
-						//Turn the item nbt into an ItemStack
-						ItemStack base_istack = ItemStack.of(selected_item);
-							
-						//Insert it into a ItemStack list for future processing
-						shulker_inv.set(selected_item.getByte("Slot"), base_istack);
-					}
-				}
-			}
-		}
 		
-	//------------------------------SHULKER TESTING & DERIVATIVE FACTORS------------------------------\\
+		//Stores the shulker box contents for processing
+		NonNullList<ItemStack> shulkerInv = unloadShulker(offhand_item, (new ShulkerBoxBlockEntity(BlockPos.ZERO, Blocks.SHULKER_BOX.defaultBlockState())).getContainerSize());
+		
 		//Count after processing
-		int processed_count = checkSlots(pickup_item, shulker_inv);
+		int processed_count = checkSlots(pickup_item, shulkerInv);
 		
 		//Count before processing
 		int previous_count = pickup_item.copy().getCount();
@@ -100,60 +79,95 @@ public class ShulkerLoad {
 			itemEntity.kill();
 		}
 		
-	//------------------------------SHULKER RELOADING----------------------------\\
+		//Set the shulker box tag equal to the new one
+		offhand_item.setTag(loadShulker(offhand_item, shulkerInv));
+	}
+	
+	//Shulker unloading
+	private NonNullList<ItemStack> unloadShulker(ItemStack shulkerBox, int shulkerSize) {
+		NonNullList<ItemStack> shulkerInv = NonNullList.withSize(shulkerSize, ItemStack.EMPTY);
+			
+		//Iterate through all the items in the shulker box and place them in an ItemStack list so they are easier to work with
+		if(shulkerBox.hasTag()) {
+			//Add the existing tag to the resulting tag
+			if(shulkerBox.getTag().contains("BlockEntityTag")) {
+				if(shulkerBox.getTag().getCompound("BlockEntityTag").contains("Items")) {
+					//Get the items in the shulker box
+					ListTag items = shulkerBox.getTag().getCompound("BlockEntityTag").getList("Items", 10);
+									
+					//Iterate through the items and place them in shulker_inv
+					for(int i=0; i<items.size(); i++) {
+						//Get the next item
+						CompoundTag selected_item = items.getCompound(i);
+											
+						//Turn the item nbt into an ItemStack
+						ItemStack base_istack = ItemStack.of(selected_item);
+										
+						//Insert it into a ItemStack list for future processing
+						shulkerInv.set(selected_item.getByte("Slot"), base_istack);
+					}
+				}
+			}
+		}
+			
+		return shulkerInv;
+	}
+		
+	//Shulker loading
+	private CompoundTag loadShulker(ItemStack shulkerBox, NonNullList<ItemStack> shulkerInv) {
+			
 		//Stores items as nbt until they are processed into the shulker box
 		ListTag item_list = new ListTag();
-				
+							
 		//Reinsert all items into the shulker box
-		for(int i = 0; i < shulker_inv.size(); i++) {
+		for(int i = 0; i < shulkerInv.size(); i++) {
 			//Get the working item
-			ItemStack current_item = shulker_inv.get(i);
-					
+			ItemStack current_item = shulkerInv.get(i);
+								
 			//Skip over empty slots so they aren't inserted into the shulker box nbt data
 			if(!(current_item==ItemStack.EMPTY)) {
 				//Get item count
 				ByteTag item_count = ByteTag.valueOf((byte) current_item.getCount());
-						
+									
 				//Select slot based on position in shulker_inv
 				ByteTag item_slot = ByteTag.valueOf((byte) i);
 
 				//Get the id based on the item's registry name and item path
 				StringTag item_id = StringTag.valueOf(Registry.ITEM.getKey(current_item.getItem()).getNamespace().toString() + ":" + Registry.ITEM.getKey(current_item.getItem()).getPath().toString());
-				
+							
 				//Add the item attributes to an item attributes container
 				CompoundTag item_attributes = new CompoundTag();
 				item_attributes.put("Count", item_count);
 				item_attributes.put("Slot", item_slot);
 				item_attributes.put("id", item_id);
-						
+									
 				//Add the pickup item tag to the resulting shulker box item if it has one
 				if(current_item.hasTag()) {
 					item_attributes.put("tag", current_item.getTag());
 				}
-						
+									
 				//Add the resulting item to the list of items
 				item_list.add(item_attributes);
 			}
 		}
 		//Holds future shulker box tag while it's being constructed
 		CompoundTag shulker_tag = new CompoundTag();
-				
-		if(offhand_item.hasTag()) {
+							
+		if(shulkerBox.hasTag()) {
 			//Add the existing tag to the resulting tag
-			shulker_tag = offhand_item.getTag();
+			shulker_tag = shulkerBox.getTag();
 		}
-				
+							
 		//Add the base block tag and id if they don't already exist
 		if(!shulker_tag.contains("BlockEntityTag")) {
 			shulker_tag.put("BlockEntityTag", new CompoundTag());
 			shulker_tag.getCompound("BlockEntityTag").putString("id", "minecraft:shulker_box");
 		}
-				
+							
 		//Add to or override "Items" in "BlockEntityTag"
 		shulker_tag.getCompound("BlockEntityTag").put("Items", item_list);
-				
-		//Set the shulker box tag equal to the new one
-		offhand_item.setTag(shulker_tag);
+			
+		return shulker_tag;
 	}
 	
 	//Ported from Inventory.class
@@ -234,50 +248,13 @@ public class ShulkerLoad {
 		return this.isShulkerBox(item.getItem());
 	}
 
-	//Avoiding the use of registries for portability
+	//Check if shulker
 	private Boolean isShulkerBox(Item item) {
 		//Get item registry name without namespace
 		String item_name = Registry.ITEM.getKey(item).getPath().toString();
 		
-		//Check to see if the item is a shulker
-		switch(item_name) {
-		case ("shulker_box"):
-			break;
-		case ("white_shulker_box"):
-			break;
-		case ("orange_shulker_box"):
-			break;
-		case ("magenta_shulker_box"):
-			break;
-		case ("light_blue_shulker_box"):
-			break;
-		case ("yellow_shulker_box"):
-			break;
-		case ("lime_shulker_box"):
-			break;
-		case ("pink_shulker_box"):
-			break;
-		case ("gray_shulker_box"):
-			break;
-		case ("light_gray_shulker_box"):
-			break;
-		case ("cyan_shulker_box"):
-			break;
-		case ("purple_shulker_box"):
-			break;
-		case ("blue_shulker_box"):
-			break;
-		case ("brown_shulker_box"):
-			break;
-		case ("green_shulker_box"):
-			break;
-		case ("red_shulker_box"):
-			break;
-		case ("black_shulker_box"):
-			break;
-		default:
-			return false;
-		}
-		return true;
+		if(item_name.endsWith("shulker_box"))
+			return true;
+		return false;
 	}
 }
