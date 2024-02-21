@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "shulkerloader",
-  "version": "1.0.9",
+  "version": "1.0.10",
 
   "name": "Shulker Loader",
   "description": "Redirects item pickups into an offhand shulker box!",
